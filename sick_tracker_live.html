@@ -1,0 +1,397 @@
+
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  #app {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    min-height: 100vh;
+    background: linear-gradient(135deg, #d5e8ff 0%, #e8d5f5 30%, #ffd6e7 60%, #d5f5e8 100%);
+    padding: 24px 16px 40px;
+    position: relative;
+    overflow: hidden;
+  }
+  #app::before {
+    content: '';
+    position: absolute; width: 300px; height: 300px;
+    border-radius: 50%; background: rgba(147,197,253,0.25);
+    top: -80px; right: -60px; pointer-events: none;
+  }
+  #app::after {
+    content: '';
+    position: absolute; width: 200px; height: 200px;
+    border-radius: 50%; background: rgba(245,168,200,0.2);
+    bottom: 60px; left: -50px; pointer-events: none;
+  }
+  .header { text-align: center; margin-bottom: 28px; }
+  .header h1 {
+    font-size: 28px; font-weight: 800;
+    background: linear-gradient(135deg, #2563eb, #7c3aed, #db2777);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    margin-bottom: 4px;
+  }
+  .header p { font-size: 13px; color: #8b7aa0; font-weight: 500; }
+  .sync-indicator {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: 11px; font-weight: 600; color: #10b981;
+    background: rgba(209,250,229,0.7); border-radius: 20px;
+    padding: 3px 10px; margin-top: 6px;
+  }
+  .sync-dot { width: 6px; height: 6px; border-radius: 50%; background: #10b981; animation: pulse 1.8s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:0.5;transform:scale(1.3)} }
+  .sync-indicator.offline { color: #f59e0b; background: rgba(254,243,199,0.7); }
+  .sync-indicator.offline .sync-dot { background: #f59e0b; animation: none; }
+  .cards-row {
+    display: grid; grid-template-columns: 1fr 1fr;
+    gap: 14px; margin-bottom: 16px; position: relative; z-index: 1;
+  }
+  .person-card {
+    background: rgba(255,255,255,0.85); backdrop-filter: blur(12px);
+    border-radius: 24px; padding: 20px 16px;
+    border: 1.5px solid rgba(255,255,255,0.9);
+    box-shadow: 0 8px 32px rgba(100,120,220,0.1);
+    transition: transform 0.2s;
+  }
+  .person-card:hover { transform: translateY(-2px); }
+  .person-card.nahi { border-top: 4px solid #60a5fa; }
+  .person-card.lid  { border-top: 4px solid #f472b6; }
+  .avatar { width: 52px; height: 52px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; margin: 0 auto 10px; }
+  .nahi .avatar { background: linear-gradient(135deg, #dbeafe, #bfdbfe); }
+  .lid  .avatar { background: linear-gradient(135deg, #fce7f3, #fbcfe8); }
+  .person-name { text-align: center; font-size: 16px; font-weight: 700; color: #3d2c5e; margin-bottom: 14px; }
+  .big-count { text-align: center; margin-bottom: 8px; }
+  .big-count .number { font-size: 52px; font-weight: 800; line-height: 1; }
+  .nahi .big-count .number { color: #2563eb; }
+  .lid  .big-count .number { color: #ec4899; }
+  .big-count .label { font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #a49abb; margin-top: 2px; }
+  .mini-stats { display: flex; gap: 6px; margin-bottom: 14px; }
+  .mini-stat { flex: 1; text-align: center; background: rgba(248,245,255,0.8); border-radius: 12px; padding: 7px 4px; }
+  .mini-stat .val { font-size: 18px; font-weight: 700; color: #3d2c5e; }
+  .mini-stat .lbl { font-size: 9px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase; color: #b5a8cc; display: block; margin-top: 1px; }
+  .sick-btn {
+    width: 100%; padding: 13px; border: none; border-radius: 16px;
+    font-family: inherit; font-size: 13px; font-weight: 700;
+    cursor: pointer; transition: transform 0.1s, box-shadow 0.1s;
+    position: relative; overflow: hidden; letter-spacing: 0.01em;
+  }
+  .nahi .sick-btn { background: linear-gradient(135deg, #60a5fa, #2563eb); color: white; box-shadow: 0 4px 16px rgba(37,99,235,0.35); }
+  .lid  .sick-btn { background: linear-gradient(135deg, #f472b6, #db2777); color: white; box-shadow: 0 4px 16px rgba(219,39,119,0.35); }
+  .sick-btn:hover { transform: translateY(-1px); box-shadow: 0 6px 20px rgba(0,0,0,0.2); }
+  .sick-btn:active { transform: scale(0.95); }
+  .sick-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+  .sick-btn.pop { animation: btnPop 0.35s cubic-bezier(0.36,0.07,0.19,0.97); }
+  @keyframes btnPop { 0%{transform:scale(1)} 30%{transform:scale(0.93)} 60%{transform:scale(1.06)} 100%{transform:scale(1)} }
+  .bottom-section { position: relative; z-index: 1; }
+  .comparison-card {
+    background: rgba(255,255,255,0.85); backdrop-filter: blur(12px);
+    border-radius: 20px; padding: 16px 20px; margin-bottom: 12px;
+    border: 1.5px solid rgba(255,255,255,0.9);
+    box-shadow: 0 4px 20px rgba(100,120,220,0.08); text-align: center;
+  }
+  .comparison-card .comp-emoji { font-size: 22px; display: block; margin-bottom: 6px; }
+  .comparison-card .comp-msg { font-size: 13px; font-weight: 600; color: #5b4d7a; line-height: 1.5; }
+  .reaction-card {
+    background: rgba(255,255,255,0.85); backdrop-filter: blur(12px);
+    border-radius: 20px; padding: 14px 20px; margin-bottom: 12px;
+    border: 1.5px solid rgba(255,255,255,0.9);
+    display: flex; gap: 12px; align-items: center;
+  }
+  .reaction-card.nahi-r { border-left: 4px solid #60a5fa; }
+  .reaction-card.lid-r  { border-left: 4px solid #f472b6; }
+  .reaction-card .r-who { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #b5a8cc; margin-bottom: 2px; }
+  .reaction-card .r-msg { font-size: 13px; font-weight: 600; color: #3d2c5e; }
+  .history-card {
+    background: rgba(255,255,255,0.85); backdrop-filter: blur(12px);
+    border-radius: 20px; padding: 16px 20px; margin-bottom: 12px;
+    border: 1.5px solid rgba(255,255,255,0.9);
+    box-shadow: 0 4px 20px rgba(100,120,220,0.08);
+  }
+  .history-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #b5a8cc; margin-bottom: 10px; }
+  .history-item { display: flex; align-items: center; gap: 8px; padding: 7px 0; border-bottom: 1px solid rgba(220,210,240,0.4); font-size: 12px; }
+  .history-item:last-child { border-bottom: none; }
+  .history-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .history-dot.nahi { background: #2563eb; }
+  .history-dot.lid  { background: #ec4899; }
+  .history-who { font-weight: 700; color: #3d2c5e; flex-shrink: 0; }
+  .history-time { color: #a49abb; font-weight: 500; margin-left: auto; flex-shrink: 0; }
+  .reset-btn {
+    width: 100%; padding: 12px;
+    background: rgba(255,255,255,0.6); border: 1.5px solid rgba(220,210,240,0.6);
+    border-radius: 14px; font-family: inherit; font-size: 12px; font-weight: 600;
+    color: #c084fc; cursor: pointer; transition: all 0.2s; letter-spacing: 0.03em;
+  }
+  .reset-btn:hover { background: rgba(255,240,255,0.8); color: #9333ea; }
+  .confetti-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 9999; overflow: hidden; }
+  .confetti-piece { position: absolute; animation: confettiFall linear forwards; will-change: transform; }
+  @keyframes confettiFall { 0%{transform:translateY(-30px) rotate(0deg) scale(0.6);opacity:1} 70%{opacity:1} 100%{transform:translateY(110vh) rotate(720deg) scale(1.2);opacity:0} }
+  .toast {
+    position: fixed; top: 20px; left: 50%;
+    transform: translateX(-50%) translateY(-80px);
+    background: rgba(255,255,255,0.97); border-radius: 16px;
+    padding: 12px 20px; font-size: 13px; font-weight: 700; color: #3d2c5e;
+    box-shadow: 0 8px 32px rgba(100,120,220,0.2); z-index: 10000;
+    transition: transform 0.4s cubic-bezier(0.34,1.56,0.64,1);
+    white-space: nowrap; border: 1.5px solid rgba(200,180,255,0.5);
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+  .no-history { text-align: center; color: #c4b8d8; font-size: 13px; font-weight: 500; padding: 10px 0; }
+  .loading-shimmer { text-align: center; color: #b5a8cc; font-size: 13px; padding: 8px 0; font-weight: 500; }
+</style>
+
+<div id="app">
+  <div class="header">
+    <h1>Sick Tracker 🤒</h1>
+    <p>keeping tabs on you two 👀</p>
+    <div class="sync-indicator offline" id="sync-status">
+      <div class="sync-dot"></div>
+      <span id="sync-text">connecting to firestore…</span>
+    </div>
+  </div>
+
+  <div class="cards-row">
+    <div class="person-card nahi">
+      <div class="avatar">💙</div>
+      <div class="person-name">Nahi</div>
+      <div class="big-count">
+        <div class="number" id="nahi-week">—</div>
+        <div class="label">this week</div>
+      </div>
+      <div class="mini-stats">
+        <div class="mini-stat"><div class="val" id="nahi-month">—</div><span class="lbl">month</span></div>
+        <div class="mini-stat"><div class="val" id="nahi-year">—</div><span class="lbl">year</span></div>
+        <div class="mini-stat"><div class="val" id="nahi-total">—</div><span class="lbl">total</span></div>
+      </div>
+      <button class="sick-btn" id="nahi-btn" onclick="logSick('nahi')" disabled>he is sick 😭</button>
+    </div>
+
+    <div class="person-card lid">
+      <div class="avatar">🌸</div>
+      <div class="person-name">Lid</div>
+      <div class="big-count">
+        <div class="number" id="lid-week">—</div>
+        <div class="label">this week</div>
+      </div>
+      <div class="mini-stats">
+        <div class="mini-stat"><div class="val" id="lid-month">—</div><span class="lbl">month</span></div>
+        <div class="mini-stat"><div class="val" id="lid-year">—</div><span class="lbl">year</span></div>
+        <div class="mini-stat"><div class="val" id="lid-total">—</div><span class="lbl">total</span></div>
+      </div>
+      <button class="sick-btn" id="lid-btn" onclick="logSick('lid')" disabled>i am sick 😭</button>
+    </div>
+  </div>
+
+  <div class="bottom-section">
+    <div class="comparison-card" id="comparison-card">
+      <span class="comp-emoji">🔥</span>
+      <div class="comp-msg" id="comp-msg">connecting to firestore…</div>
+    </div>
+    <div class="reaction-card nahi-r" id="nahi-reaction-card" style="display:none">
+      <span style="font-size:22px">💙</span>
+      <div><div class="r-who">Nahi's vibe</div><div class="r-msg" id="nahi-reaction">—</div></div>
+    </div>
+    <div class="reaction-card lid-r" id="lid-reaction-card" style="display:none">
+      <span style="font-size:22px">🌸</span>
+      <div><div class="r-who">Lid's vibe</div><div class="r-msg" id="lid-reaction">—</div></div>
+    </div>
+    <div class="history-card">
+      <div class="history-title">📋 recent log</div>
+      <div id="history-list"><div class="loading-shimmer">fetching from firestore 🔥</div></div>
+    </div>
+    <button class="reset-btn" onclick="resetData()">🗑️ clear all data</button>
+  </div>
+</div>
+
+<div class="confetti-container" id="confetti-container"></div>
+<div class="toast" id="toast"></div>
+
+<script type="module">
+import { initializeApp }        from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+import { getFirestore, collection, addDoc, deleteDoc, getDocs, onSnapshot, serverTimestamp, query, orderBy }
+  from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+
+const firebaseConfig = {
+  apiKey:            "AIzaSyDyL0_l8UjOfzuH54z73Yj9-Fy6uJRnfnE",
+  authDomain:        "sick-tracker-cacfc.firebaseapp.com",
+  projectId:         "sick-tracker-cacfc",
+  storageBucket:     "sick-tracker-cacfc.firebasestorage.app",
+  messagingSenderId: "695146330362",
+  appId:             "1:695146330362:web:cd8294a3690ba73bcd7143",
+  measurementId:     "G-P779RXKXYW"
+};
+
+const EMOJIS_NAHI = ['💙','🫐','😭','🤧','💊','🥺','✨','🫶','🩵','❄️'];
+const EMOJIS_LID  = ['🌸','💕','😭','🤒','✨','💫','🥀','🫠','🎀','🩷'];
+
+const REACTIONS_NAHI = {
+  low:    ['peaceful… for now 🌸','just a lil sniffly 🤧','vibing but fragile 🥺','barely a concern 💅'],
+  medium: ['hmm, okay Nahi 🤔','this is becoming a pattern 📊','the sick era begins 🚩','suspicious… 👀'],
+  high:   ['CHRONICALLY ILL??? 🚨','please go to a doctor 😭','this is getting out of hand 🌡️','are you okay bestie 🥲']
+};
+const REACTIONS_LID = {
+  low:    ['barely a sniffle 🌸','staying strong 💪','just a little off 🌀','tea and rest needed 🍵'],
+  medium: ['okay this keeps happening 🤔','getting suspicious 🚩','maybe check your immunity? 💊','the body is speaking 👁️'],
+  high:   ['this is truly alarming 🚨','please eat some soup 🍜','rest!! rest!! rest!! 😤','chronically unwell era 🌡️']
+};
+
+function getRandom(arr)           { return arr[Math.floor(Math.random() * arr.length)]; }
+function getReactionLevel(count)  { return count <= 2 ? 'low' : count <= 6 ? 'medium' : 'high'; }
+
+let allData = [];
+const app = initializeApp(firebaseConfig);
+const db  = getFirestore(app);
+
+function setSyncStatus(online) {
+  const el  = document.getElementById('sync-status');
+  const txt = document.getElementById('sync-text');
+  if (online) {
+    el.className = 'sync-indicator';
+    txt.textContent = 'live · synced across devices';
+  } else {
+    el.className = 'sync-indicator offline';
+    txt.textContent = 'reconnecting…';
+  }
+}
+
+function getStats(person) {
+  const now          = new Date();
+  const startOfWeek  = new Date(now); startOfWeek.setHours(0,0,0,0); startOfWeek.setDate(now.getDate() - now.getDay());
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const startOfYear  = new Date(now.getFullYear(), 0, 1);
+  const mine = allData.filter(e => e.person === person);
+  return {
+    week:  mine.filter(e => e.ts >= startOfWeek).length,
+    month: mine.filter(e => e.ts >= startOfMonth).length,
+    year:  mine.filter(e => e.ts >= startOfYear).length,
+    total: mine.length,
+    last:  mine.length ? mine[0].ts : null
+  };
+}
+
+function updateUI() {
+  const ns = getStats('nahi');
+  const ls = getStats('lid');
+
+  ['week','month','year','total'].forEach(k => {
+    document.getElementById('nahi-' + k).textContent = ns[k];
+    document.getElementById('lid-'  + k).textContent = ls[k];
+  });
+
+  const compEl  = document.getElementById('comp-msg');
+  const compEmo = document.querySelector('#comparison-card .comp-emoji');
+  if (!ns.last && !ls.last) {
+    compEmo.textContent = '🌸'; compEl.textContent = 'both feeling fine… for now 🌸';
+  } else if (ns.last && ls.last) {
+    if      (ns.last > ls.last) { compEmo.textContent = '👀'; compEl.textContent = 'Nahi got sick more recently — get well soon! 💙'; }
+    else if (ls.last > ns.last) { compEmo.textContent = '🌸'; compEl.textContent = 'Lid got sick more recently — rest up! 💊'; }
+    else                        { compEmo.textContent = '🤝'; compEl.textContent = 'sick at the same time?! duo mode activated 😭'; }
+    if      (ns.total > ls.total) compEl.textContent += ` · Nahi ${ns.total - ls.total}x more overall 👑`;
+    else if (ls.total > ns.total) compEl.textContent += ` · Lid ${ls.total - ns.total}x more overall 👑`;
+  } else if (ns.last) {
+    compEmo.textContent = '💙'; compEl.textContent = 'Lid is thriving, Nahi… not so much 😬';
+  } else {
+    compEmo.textContent = '🌸'; compEl.textContent = 'Nahi is thriving, Lid… not so much 😬';
+  }
+
+  if (ns.total > 0) {
+    document.getElementById('nahi-reaction-card').style.display = 'flex';
+    document.getElementById('nahi-reaction').textContent = getRandom(REACTIONS_NAHI[getReactionLevel(ns.month)]);
+  }
+  if (ls.total > 0) {
+    document.getElementById('lid-reaction-card').style.display = 'flex';
+    document.getElementById('lid-reaction').textContent = getRandom(REACTIONS_LID[getReactionLevel(ls.month)]);
+  }
+
+  const histEl  = document.getElementById('history-list');
+  const recent  = allData.slice(0, 8);
+  if (!recent.length) {
+    histEl.innerHTML = '<div class="no-history">no sick days yet ✨ stay healthy!</div>';
+  } else {
+    histEl.innerHTML = recent.map(e => {
+      const timeStr = e.ts.toLocaleDateString('en-US',{month:'short',day:'numeric'}) + ' · ' +
+                      e.ts.toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit',hour12:true});
+      return `<div class="history-item">
+        <div class="history-dot ${e.person}"></div>
+        <span class="history-who">${e.person === 'nahi' ? '💙 Nahi' : '🌸 Lid'}</span>
+        <span class="history-time">${timeStr}</span>
+      </div>`;
+    }).join('');
+  }
+}
+
+const q = query(collection(db, 'sickTracker'), orderBy('timestamp', 'desc'));
+onSnapshot(q,
+  snap => {
+    allData = snap.docs.map(doc => ({
+      id:     doc.id,
+      person: doc.data().person,
+      ts:     doc.data().timestamp?.toDate?.() ?? new Date()
+    }));
+    setSyncStatus(true);
+    document.getElementById('nahi-btn').disabled = false;
+    document.getElementById('lid-btn').disabled  = false;
+    updateUI();
+  },
+  err => {
+    console.error('Firestore error:', err);
+    setSyncStatus(false);
+    document.getElementById('comp-msg').textContent = '⚠️ Firestore error — check console';
+  }
+);
+
+function spawnConfetti(person) {
+  const container = document.getElementById('confetti-container');
+  const emojis    = person === 'nahi' ? EMOJIS_NAHI : EMOJIS_LID;
+  for (let i = 0; i < 18; i++) {
+    const el = document.createElement('div');
+    el.className   = 'confetti-piece';
+    el.textContent = getRandom(emojis);
+    el.style.left             = (10 + Math.random() * 80) + '%';
+    el.style.animationDuration = (1.4 + Math.random() * 1.2) + 's';
+    el.style.animationDelay   = (Math.random() * 0.4) + 's';
+    el.style.fontSize         = (16 + Math.random() * 14) + 'px';
+    container.appendChild(el);
+    setTimeout(() => el.remove(), 3000);
+  }
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2500);
+}
+
+window.logSick = async function(person) {
+  const btn = document.getElementById(person + '-btn');
+  btn.disabled = true;
+  try {
+    await addDoc(collection(db, 'sickTracker'), { person, timestamp: serverTimestamp() });
+    btn.classList.remove('pop'); void btn.offsetWidth; btn.classList.add('pop');
+    setTimeout(() => btn.classList.remove('pop'), 400);
+    spawnConfetti(person);
+    const level = getReactionLevel(getStats(person).month);
+    const name  = person === 'nahi' ? 'Nahi' : 'Lid';
+    const msgs  = {
+      low:    [`feel better ${name}! 🌸`, `aw no 🥺 rest up!`, `sending healing vibes 💊`],
+      medium: [`${name} again?? 🚩`, `okay ${name}… 🤔`, `this is becoming a habit 👀`],
+      high:   [`${name}!! please see a doctor 🚨`, `chronically unwell era 🌡️`, `REST!! 😤`]
+    };
+    showToast(getRandom(msgs[level]));
+  } catch(e) {
+    console.error(e);
+    showToast('❌ failed to save — check Firestore rules');
+    btn.disabled = false;
+  }
+};
+
+window.resetData = async function() {
+  if (!confirm('delete ALL sick records from Firestore? 🗑️ this cannot be undone!')) return;
+  try {
+    const snap = await getDocs(collection(db, 'sickTracker'));
+    await Promise.all(snap.docs.map(d => deleteDoc(d.ref)));
+    showToast('all clear! fresh start ✨');
+  } catch(e) {
+    console.error(e);
+    showToast('❌ reset failed — check Firestore permissions');
+  }
+};
+</script>
